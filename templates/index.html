@@ -1,4 +1,3 @@
-<!-- Simplified AI Fake Job Detection UI with Wider Layout -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -59,7 +58,7 @@
                 <h3 id="riskLevel" class="font-bold"></h3>
                 <ul id="risksList" class="list-disc pl-4"></ul>
             </div>
-            <p class="text-sm text-gray-500">Note: This is an automated analysis and should not be the sole factor in determining job legitimacy.</p>
+            <p class="text-sm text-gray-500">Note: This is an automated analysis with realtime updated database.</p>
         </div>
     </div>
 
@@ -115,6 +114,11 @@
                         }
                         
                         $('#analysisResults').removeClass('hidden');
+                        
+                        // Scroll to the analysis results with smooth animation
+                        $('html, body').animate({
+                            scrollTop: $('#analysisResults').offset().top
+                        }, 800);
                     },
                     error: function(xhr) {
                         $('#loading').addClass('hidden');
