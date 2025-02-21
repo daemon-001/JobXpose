@@ -4,12 +4,13 @@ import validators
 
 # Importing supabase
 from supabase import create_client
-SUPABASE_URL = "https://your-supabase-url.supabase.co"
-SUPABASE_KEY = "your-anon-or-service-role-key"
+SUPABASE_URL = "https://uvjuxbsqjebecfxrvnso.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2anV4YnNxamViZWNmeHJ2bnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwODI3NDcsImV4cCI6MjA1NTY1ODc0N30.Vfc5xclfQdhvYGW8nKVCJnVOdzXO5_DFBNd--YqdJkI"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 app = Flask(__name__)
+
 
 def validate_inputs(job_details):
     errors = []
@@ -31,56 +32,42 @@ def validate_inputs(job_details):
         errors.append("Invalid salary format")
     return errors
 
+
 def check_unrealistic_salary(salary):
     salary_value = float(salary)
     print(salary_value)
     return salary_value > 500000 or salary_value < 10000
 
+
 def check_generic_description(description):
     return len(description) < 100 or description.count('.') < 2
+
 
 def check_minimal_requirements(requirements):
     return len(requirements) < 50 or requirements.count(',') < 2
 
+
 def check_suspicious_email(email):
+
     suspicious_email = supabase.table("fake_job").select("values").eq("name", "suspicious_email").execute().data[0]["values"]
-    # suspicious_email_domains = [
-    #     'temp', 'disposable', 'free', 'temporary', 
-    #     'mailinator', 'guerrillamail', '10minutemail'
-    # ]
     return any(domain in email.lower() for domain in suspicious_email) or not email.endswith(('.com', '.org', '.net', '.edu', '.gov'))
 
 
 def check_vague_benefits(description):
+
     buzzwords = supabase.table("fake_job").select("values").eq("name", "buzzwords").execute().data[0]["values"]
-    # buzzwords = [
-    #     'unlimited earnings', 'be your own boss', 'quick money', 
-    #     'work from anywhere', 'instant profit', 'no experience needed',
-    #     'weekly bonus', 'immediate start', 'flexible hours',
-    #     'ground floor opportunity', 'million dollar'
-    # ]
     return any(word in description.lower() for word in buzzwords)
 
+
 def check_company_legitimacy(company, description):
+
     red_flags = supabase.table("fake_job").select("values").eq("name", "red_flags").execute().data[0]["values"]
-    # red_flags = [
-    #     'startup opportunity',
-    #     'ground floor',
-    #     'no office',
-    #     'work from home only',
-    #     'commission only',
-    #     'investment required',
-    #     'training fee'
-    # ]
     return any(flag in description.lower() for flag in red_flags)
 
+
 def check_urgency_pressure(description):
+
     urgency_phrases = supabase.table("fake_job").select("values").eq("name", "urgency_phrases").execute().data[0]["values"]
-    # urgency_phrases = [
-    #     'limited time', 'urgent', 'immediate start', 
-    #     'apply now', 'positions filling fast', 'today only',
-    #     'last chance', 'deadline tomorrow'
-    # ]
     return any(phrase in description.lower() for phrase in urgency_phrases)
 
 
@@ -92,7 +79,7 @@ def calculate_job_score(risks):
         'Suspicious contact email domain': -25,
         'Minimal or vague job requirements': -15,
         'Contains suspicious buzzwords or promises': -25,
-        'High-pressure or urgency tactics': -20,
+        'High-pressure or urgency tactics': -10,
         'Suspicious company indicators': -25
     }
     
