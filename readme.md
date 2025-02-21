@@ -21,12 +21,10 @@ An AI-powered web application to detect potentially fraudulent job listings usin
 
 ```
 📝 AI-Fake-Job-Detector
-│️— 📄 app.py             # Flask backend handling job analysis
-│️— 📄 update_supabase.py # Script to update risk indicators in Supabase
-│️— 📄 index.html         # Frontend UI for job submission and results
-│️— 📂 static             # (Optional) Place for static assets (CSS, JS, images)
-│️— 📂 templates          # Flask template files (if extended)
-│️— 📄 README.md          # Project documentation
+│️— 📄 README.md            # Project documentation
+│️— 📄 app.py               # Flask backend handling job analysis
+│️— 📄 update_supabase.py   # Script to update risk indicators in Supabase
+│️— 📂 templates/index.html # Frontend UI for job submission and results
 ```
 
 ## 🏃‍♂️ How to Run Locally
@@ -60,19 +58,6 @@ An AI-powered web application to detect potentially fraudulent job listings usin
 3. The system evaluates risks and assigns a legitimacy score.
 4. View flagged risks, if any.
 
-## 📌 To-Do
-
-- [ ] Add machine learning-based risk prediction.
-- [ ] Improve UI for better user experience.
-- [ ] Deploy on a cloud platform.
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to fork this repo, make improvements, and submit a pull request.
-
-## 🐜 License
-
-This project is licensed under the MIT License.
 
 ---
 
