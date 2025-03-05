@@ -1,15 +1,19 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 from datetime import datetime
 import validators
+import os
+import secrets
 
 # Importing supabase
 from supabase import create_client
-SUPABASE_URL = "https://uvjuxbsqjebecfxrvnso.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2anV4YnNxamViZWNmeHJ2bnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwODI3NDcsImV4cCI6MjA1NTY1ODc0N30.Vfc5xclfQdhvYGW8nKVCJnVOdzXO5_DFBNd--YqdJkI"
+SUPABASE_URL = "YOUR SUPABASE URL"
+SUPABASE_KEY = "YOUR SUPABASE KEY"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 app = Flask(__name__)
+# Set a secret key for session management
+app.secret_key = secrets.token_hex(16)
 
 
 def validate_inputs(job_details):
@@ -36,7 +40,7 @@ def validate_inputs(job_details):
 def check_unrealistic_salary(salary):
     salary_value = float(salary)
     print(salary_value)
-    return salary_value > 500000 or salary_value < 10000
+    return salary_value > 40000 or salary_value < 5000
 
 
 def check_generic_description(description):
@@ -147,6 +151,242 @@ def analyze():
         'success': True,
         'data': analysis
     })
+
+# Admin Authentication route
+@app.route('/admin/login', methods=['POST'])
+def admin_login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    
+    if not username or not password:
+        return jsonify({
+            'success': False,
+            'message': 'Username and password are required'
+        }), 400
+    
+    try:
+        # Query the admin credentials from Supabase
+        response = supabase.table("admin_credentials").select("*").eq("username", username).execute()
+        print(response.data)
+        
+        if not response.data or len(response.data) == 0:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid username or password'
+            }), 401
+        
+        # Compare the password (in a real app, you'd use password hashing)
+        admin_user = response.data[0]
+        if admin_user['password'] != password:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid username or password'
+            }), 401
+        
+        # Set a session variable to indicate the user is logged in
+        session['admin_logged_in'] = True
+        session['admin_username'] = username
+        
+        return jsonify({
+            'success': True,
+            'message': 'Login successful'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Login error: {str(e)}'
+        }), 500
+
+# Admin logout route
+@app.route('/admin/logout', methods=['POST'])
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    session.pop('admin_username', None)
+    return jsonify({
+        'success': True,
+        'message': 'Logout successful'
+    })
+
+# Admin routes
+@app.route('/admin')
+def admin():
+    return render_template('admin.html')
+
+@app.route('/admin/get-category', methods=['POST'])
+def get_category():
+    # Check if user is logged in
+    if not session.get('admin_logged_in'):
+        return jsonify({
+            'success': False,
+            'message': 'Authentication required'
+        }), 401
+    
+    data = request.json
+    category = data.get('category')
+    
+    if not category or category not in ['buzzwords', 'red_flags', 'suspicious_email', 'urgency_phrases']:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid category'
+        }), 400
+    
+    try:
+        response = supabase.table("fake_job").select("values").eq("name", category).execute()
+        if response.data and len(response.data) > 0:
+            return jsonify({
+                'success': True,
+                'data': response.data[0]["values"]
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Category not found'
+            })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/admin/update-category', methods=['POST'])
+def update_category():
+    # Check if user is logged in
+    if not session.get('admin_logged_in'):
+        return jsonify({
+            'success': False,
+            'message': 'Authentication required'
+        }), 401
+    
+    data = request.json
+    category = data.get('category')
+    items = data.get('items', [])
+    
+    if not category or category not in ['buzzwords', 'red_flags', 'suspicious_email', 'urgency_phrases']:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid category'
+        }), 400
+    
+    if not items or not isinstance(items, list):
+        return jsonify({
+            'success': False,
+            'message': 'No items provided'
+        }), 400
+    
+    try:
+        # Get existing items
+        response = supabase.table("fake_job").select("values").eq("name", category).execute()
+        if not response.data or len(response.data) == 0:
+            return jsonify({
+                'success': False,
+                'message': 'Category not found'
+            }), 404
+        
+        existing_items = response.data[0]["values"] or []
+        
+        # Filter out items that already exist
+        new_items = [item.lower().strip() for item in items if item.strip()]
+        items_to_add = [item for item in new_items if item not in existing_items]
+        
+        if not items_to_add:
+            return jsonify({
+                'success': True,
+                'message': 'No new items to add',
+                'added_count': 0
+            })
+        
+        # Update the database
+        updated_items = existing_items + items_to_add
+        supabase.table("fake_job").update({"values": updated_items}).eq("name", category).execute()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Added {len(items_to_add)} items to {category}',
+            'added_count': len(items_to_add)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/admin/remove-items', methods=['POST'])
+def remove_items():
+    # Check if user is logged in
+    if not session.get('admin_logged_in'):
+        return jsonify({
+            'success': False,
+            'message': 'Authentication required'
+        }), 401
+    
+    data = request.json
+    category = data.get('category')
+    items_to_remove = data.get('items', [])
+    
+    if not category or category not in ['buzzwords', 'red_flags', 'suspicious_email', 'urgency_phrases']:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid category'
+        }), 400
+    
+    if not items_to_remove or not isinstance(items_to_remove, list):
+        return jsonify({
+            'success': False,
+            'message': 'No items provided for removal'
+        }), 400
+    
+    try:
+        # Get existing items
+        response = supabase.table("fake_job").select("values").eq("name", category).execute()
+        if not response.data or len(response.data) == 0:
+            return jsonify({
+                'success': False,
+                'message': 'Category not found'
+            }), 404
+        
+        existing_items = response.data[0]["values"] or []
+        
+        # Create a new list excluding the items to remove
+        updated_items = [item for item in existing_items if item not in items_to_remove]
+        
+        # Count how many items were actually removed
+        removed_count = len(existing_items) - len(updated_items)
+        
+        if removed_count == 0:
+            return jsonify({
+                'success': True,
+                'message': 'No items were removed',
+                'removed_count': 0
+            })
+        
+        # Update the database with the new list
+        supabase.table("fake_job").update({"values": updated_items}).eq("name", category).execute()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Removed {removed_count} items from {category}',
+            'removed_count': removed_count
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/admin/check-session', methods=['GET'])
+def check_session():
+    if session.get('admin_logged_in'):
+        return jsonify({
+            'success': True,
+            'isLoggedIn': True,
+            'username': session.get('admin_username')
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'isLoggedIn': False
+        })
 
 if __name__ == '__main__':
     app.run(debug=True)

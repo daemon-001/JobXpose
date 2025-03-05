@@ -1,7 +1,7 @@
 from supabase import create_client
 
-SUPABASE_URL = "https://uvjuxbsqjebecfxrvnso.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2anV4YnNxamViZWNmeHJ2bnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwODI3NDcsImV4cCI6MjA1NTY1ODc0N30.Vfc5xclfQdhvYGW8nKVCJnVOdzXO5_DFBNd--YqdJkI"
+SUPABASE_URL = "YOUR SUPABASE URL"
+SUPABASE_KEY = "YOUR SUPABASE KEY"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -95,7 +95,11 @@ new_urgency_phrases = [
     'running out of time', 'offer expires', 'quick response needed'
     ]
 
-update_data("buzzwords", new_buzzwords)
-update_data("red_flags", new_red_flags)
-update_data("suspicious_email", new_suspicious_email)
-update_data("urgency_phrases", new_urgency_phrases)
+# update_data("buzzwords", new_buzzwords)
+# update_data("red_flags", new_red_flags)
+# update_data("suspicious_email", new_suspicious_email)
+# update_data("urgency_phrases", new_urgency_phrases)
+
+# username = 'nitesh'
+response = supabase.table("fake_job").select("values").execute()
+print(response.data)

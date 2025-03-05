@@ -7,58 +7,61 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gradient-to-br from-blue-100 to-indigo-200 min-h-screen flex items-center justify-center">
-    <div class="max-w-6xl w-full mx-auto p-8 space-y-6 bg-white shadow-xl rounded-lg">
-        <!-- Header -->
-        <div class="text-center">
-            <h1 class="text-3xl font-bold text-indigo-700">AI Fake Job Detection</h1>
-            <p class="text-gray-600">Enter job listing details to analyze potential fraud indicators.</p>
-        </div>
-        
-        <!-- Job Input Form -->
-        <div class="grid grid-cols-2 gap-6">
-            <div>
-                <label class="block font-medium">Job Title</label>
-                <input type="text" id="title" class="w-full p-3 border rounded shadow-sm">
+<body class="bg-gradient-to-br from-blue-200 to-purple-200 min-h-screen flex flex-col">
+    <div class="flex-1 flex items-center justify-center p-8">
+        <div class="max-w-6xl w-full mx-auto bg-white shadow-xl rounded-lg p-6">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-4xl font-bold text-purple-700">AI Fake Job Detection</h1>
+                <a href="/admin" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Admin Dashboard</a>
             </div>
-            <div>
-                <label class="block font-medium">Company Name</label>
-                <input type="text" id="company" class="w-full p-3 border rounded shadow-sm">
+            <p class="text-gray-600 mb-6">Enter job listing details to analyze potential fraud indicators.</p>
+            
+            <!-- Job Input Form -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block font-medium">Job Title</label>
+                    <input type="text" id="title" class="w-full p-3 border rounded shadow-sm">
+                </div>
+                <div>
+                    <label class="block font-medium">Company Name</label>
+                    <input type="text" id="company" class="w-full p-3 border rounded shadow-sm">
+                </div>
+                <div class="col-span-1 lg:col-span-2">
+                    <label class="block font-medium">Job Description</label>
+                    <textarea id="description" class="w-full p-3 border rounded shadow-sm" rows="3"></textarea>
+                </div>
+                <div>
+                    <label class="block font-medium">Salary/month</label>
+                    <input type="number" id="salary" class="w-full p-3 border rounded shadow-sm">
+                </div>
+                <div>
+                    <label class="block font-medium">Contact Email</label>
+                    <input type="email" id="email" class="w-full p-3 border rounded shadow-sm">
+                </div>
+                <div class="col-span-1 lg:col-span-2">
+                    <label class="block font-medium">Job Requirements</label>
+                    <textarea id="requirements" class="w-full p-3 border rounded shadow-sm" rows="3"></textarea>
+                </div>
             </div>
-            <div class="col-span-2">
-                <label class="block font-medium">Job Description</label>
-                <textarea id="description" class="w-full p-3 border rounded shadow-sm" rows="3"></textarea>
-            </div>
-            <div>
-                <label class="block font-medium">Salary</label>
-                <input type="number" id="salary" class="w-full p-3 border rounded shadow-sm">
-            </div>
-            <div>
-                <label class="block font-medium">Contact Email</label>
-                <input type="email" id="email" class="w-full p-3 border rounded shadow-sm">
-            </div>
-            <div class="col-span-2">
-                <label class="block font-medium">Job Requirements</label>
-                <textarea id="requirements" class="w-full p-3 border rounded shadow-sm" rows="3"></textarea>
-            </div>
-        </div>
-        
-        <button id="analyzeBtn" class="w-full bg-indigo-600 text-white p-3 rounded hover:bg-indigo-700 flex items-center justify-center">
-            <span>Analyze Job Listing</span>
-            <span id="loading" class="ml-2 hidden animate-spin">⏳</span>
-        </button>
+            
+            <button id="analyzeBtn" class="w-full bg-purple-600 text-white p-3 rounded hover:bg-purple-700 flex items-center justify-center">
+                <span>Analyze Job Listing</span>
+                <span id="loading" class="ml-2 hidden animate-spin">⏳</span>
+            </button>
 
-        <!-- Analysis Results -->
-        <div id="analysisResults" class="bg-gray-100 p-6 rounded-lg hidden">
-            <h2 class="text-xl font-bold flex items-center gap-2">
-                Analysis Results <span id="riskIcon"></span>
-            </h2>
-            <p id="timestamp" class="text-gray-600"></p>
-            <div id="alertContainer" class="p-4 rounded mt-4">
-                <h3 id="riskLevel" class="font-bold"></h3>
-                <ul id="risksList" class="list-disc pl-4"></ul>
+            <!-- Analysis Results -->
+            <div id="analysisResults" class="bg-gray-100 p-6 rounded-lg hidden mt-6">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    Analysis Results <span id="riskIcon"></span>
+                </h2>
+                <p id="timestamp" class="text-gray-600"></p>
+                <div id="alertContainer" class="p-4 rounded mt-4">
+                    <h3 id="riskLevel" class="font-bold"></h3>
+                    <ul id="risksList" class="list-disc pl-4"></ul>
+                </div>
+                <p class="text-sm text-gray-500">Note: This is an automated analysis with realtime updated database.</p>
             </div>
-            <p class="text-sm text-gray-500">Note: This is an automated analysis with realtime updated database.</p>
         </div>
     </div>
 
@@ -125,7 +128,7 @@
                         if (xhr.responseJSON && xhr.responseJSON.errors) {
                             alert('Validation errors: ' + xhr.responseJSON.errors.join('\n'));
                         } else {
-                            alert('An error occurred while analyzing the job listing.');
+                            alert('Unable to connect to the server. Please try again later.');
                         }
                     }
                 });
