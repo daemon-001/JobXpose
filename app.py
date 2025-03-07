@@ -6,8 +6,9 @@ import secrets
 
 # Importing supabase
 from supabase import create_client
-SUPABASE_URL = "YOUR SUPABASE URL"
-SUPABASE_KEY = "YOUR SUPABASE KEY"
+
+SUPABASE_URL = "https://uvjuxbsqjebecfxrvnso.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2anV4YnNxamViZWNmeHJ2bnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwODI3NDcsImV4cCI6MjA1NTY1ODc0N30.Vfc5xclfQdhvYGW8nKVCJnVOdzXO5_DFBNd--YqdJkI"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
