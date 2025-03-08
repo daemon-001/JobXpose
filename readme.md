@@ -58,8 +58,11 @@ An AI-powered web application to detect potentially fraudulent job listings usin
 3. The system evaluates risks and assigns a legitimacy score.
 4. View flagged risks, if any.
 
+## Snapshots
+[visuals.fakejob.pdf](https://github.com/user-attachments/files/19145195/visuals.fakejob.pdf)
 
 ---
 
 💡 **Built for safer job searching!**
+
 
