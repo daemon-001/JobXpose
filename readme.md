@@ -69,6 +69,9 @@ An AI-powered web application to detect potentially fraudulent job listings usin
 ![8](https://github.com/user-attachments/assets/10e0e9a3-bcac-4394-91fe-0ee6144479fd)
 
 
+## License
+This project is licensed under the MIT License. See the LICENSE file for more details.
+
 ---
 
 💡 **Built for safer job searching!**
