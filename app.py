@@ -3,46 +3,51 @@ from datetime import datetime
 import validators
 import os
 import secrets
+import autofill
 
 # Importing supabase
 from supabase import create_client
 
-# Enter your Supabase URL and Key here
-SUPABASE_URL = "Enter SUPABASE_URL"
-SUPABASE_KEY = "Enter SUPABASE_KEY"
+SUPABASE_URL = "https://uvjuxbsqjebecfxrvnso.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2anV4YnNxamViZWNmeHJ2bnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwODI3NDcsImV4cCI6MjA1NTY1ODc0N30.Vfc5xclfQdhvYGW8nKVCJnVOdzXO5_DFBNd--YqdJkI"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 app = Flask(__name__)
-# Set a secret key for session management
+
 app.secret_key = secrets.token_hex(16)
 
 
 def validate_inputs(job_details):
     errors = []
+
+
     
-    if not job_details.get('title') or len(job_details['title']) < 3:
+    if  job_details.get('title') and len(job_details['title']) < 3:
         errors.append("Job title must be at least 3 characters long")
     
-    if not job_details.get('company') or len(job_details['company']) < 2:
+    if  job_details.get('company') and len(job_details['company']) < 2:
         errors.append("Company name must be at least 2 characters long")
     
-    if not validators.email(job_details.get('email', '')):
-        errors.append("Invalid email format")
+    if job_details.get('email'):
+        if not validators.email(job_details.get('email', '')):
+            errors.append("Invalid email format")
+
+    if job_details.get('salary'):
+        try:
+            salary = float(job_details.get('salary', '0'))
+            if salary <= 0:
+                errors.append("Salary must be a positive number")
+        except:
+            errors.append("Invalid salary format")
+        return errors
     
-    try:
-        salary = float(job_details.get('salary', '0'))
-        if salary <= 0:
-            errors.append("Salary must be a positive number")
-    except:
-        errors.append("Invalid salary format")
-    return errors
 
 
 def check_unrealistic_salary(salary):
     salary_value = float(salary)
     print(salary_value)
-    return salary_value > 40000 or salary_value < 5000
+    return salary_value > 70000 or salary_value < 5000
 
 
 def check_generic_description(description):
@@ -54,32 +59,53 @@ def check_minimal_requirements(requirements):
 
 
 def check_suspicious_email(email):
-
-    suspicious_email = supabase.table("fake_job").select("values").eq("name", "suspicious_email").execute().data[0]["values"]
-    return any(domain in email.lower() for domain in suspicious_email) or not email.endswith(('.com', '.org', '.net', '.edu', '.gov'))
+    request = supabase.table("fake_job").select("values").eq("name", "suspicious_email").execute().data[0]["values"]
+    suspicious_email = [item.lower() for item in request]
+    return any(domain in email.lower() for domain in suspicious_email) or not email.endswith(('.com', '.org', '.net', '.edu', '.gov', '.in'))
 
 
 def check_vague_benefits(description):
-
-    buzzwords = supabase.table("fake_job").select("values").eq("name", "buzzwords").execute().data[0]["values"]
+    request = supabase.table("fake_job").select("values").eq("name", "buzzwords").execute().data[0]["values"]
+    buzzwords = [item.lower() for item in request]
     return any(word in description.lower() for word in buzzwords)
 
 
-def check_company_legitimacy(company, description):
-
-    red_flags = supabase.table("fake_job").select("values").eq("name", "red_flags").execute().data[0]["values"]
+def check_red_flags(description):
+    request = supabase.table("fake_job").select("values").eq("name", "red_flags").execute().data[0]["values"]
+    red_flags = [item.lower() for item in request]
     return any(flag in description.lower() for flag in red_flags)
 
+def check_payments(discription):
+    request = supabase.table("fake_job").select("values").eq("name", "payment").execute().data[0]["values"]
+    payment = [item.lower() for item in request]
+    return any(pay in discription.lower() for pay in payment)
 
 def check_urgency_pressure(description):
-
-    urgency_phrases = supabase.table("fake_job").select("values").eq("name", "urgency_phrases").execute().data[0]["values"]
+    request = supabase.table("fake_job").select("values").eq("name", "urgency_phrases").execute().data[0]["values"]
+    urgency_phrases = [item.lower() for item in request]
     return any(phrase in description.lower() for phrase in urgency_phrases)
+
+def check_job_title(title):
+    request = supabase.table("fake_job").select("values").eq("name", "title").execute().data[0]["values"]
+    suspicious_title = [item.lower() for item in request]
+    return any(job_title in title.lower() for job_title in suspicious_title)
+
+def check_job_requirements(requirements):
+    request = supabase.table("fake_job").select("values").eq("name", "requirements").execute().data[0]["values"]
+    job_requirements = [item.lower() for item in request]
+    print(job_requirements)
+    return any(requirement in requirements.lower() for requirement in job_requirements)
+
+
+
 
 
 def calculate_job_score(risks):
     base_score = 100
     deductions = {
+        'Suspicious job title': -25,
+        'Suspicious job requirements': -20,
+        'Payment request found': -30,
         'Unrealistic salary range': -30,
         'Overly generic or short job description': -20,
         'Suspicious contact email domain': -25,
@@ -95,15 +121,27 @@ def calculate_job_score(risks):
 def analyze_job(job_details):
     risks = []
     risk_level = 'low'
+
+    if job_details.get('salary'):
+        if check_job_title(job_details['title']):
+            risks.append('Suspicious job title')
+
+    if job_details.get('salary'):
+        if check_unrealistic_salary(job_details['salary']):
+            risks.append('Unrealistic salary')
+
+    if job_details.get('email'):
+        if check_suspicious_email(job_details['email']):
+            risks.append('Suspicious contact email domain')
     
-    if check_unrealistic_salary(job_details['salary']):
-        risks.append('Unrealistic salary')
+    if check_job_requirements(job_details['requirements']):
+        risks.append('Suspicious job requirements')
+
+    if check_payments(job_details['description']):
+        risks.append('Payment request found')
     
     if check_generic_description(job_details['description']):
         risks.append('Overly generic or short job description')
-    
-    if check_suspicious_email(job_details['email']):
-        risks.append('Suspicious contact email domain')
     
     if check_minimal_requirements(job_details['requirements']):
         risks.append('Minimal or vague job requirements')
@@ -114,7 +152,7 @@ def analyze_job(job_details):
     if check_urgency_pressure(job_details['description']):
         risks.append('High-pressure or urgency tactics')
     
-    if check_company_legitimacy(job_details['company'], job_details['description']):
+    if check_red_flags(job_details['description']):
         risks.append('Suspicious company indicators')
     
     # Calculate risk level based on number of risks
@@ -135,6 +173,45 @@ def analyze_job(job_details):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/import-job-text', methods=['POST'])
+def import_job_text():
+    """
+    Process the imported job listing text and extract structured information
+    using the OpenRouter API.
+    """
+    data = request.json
+    text = data.get('text')
+    
+
+    if not text or len(text.strip()) < 50:
+        return jsonify({
+            'success': False,
+            'message': 'Please provide a longer job description for accurate parsing.'
+        }), 400
+    
+    if text[:4]== 'http':
+        return jsonify({
+            'success': False,
+            'message': 'Url Web scraping not allowed. Please paste raw text.'
+        }), 400
+
+    # Process the text with OpenRouter API
+    result = autofill.parse_job_listing(text)
+    
+    if result['success']:
+        return jsonify({
+            'data': result['data'],
+            'success': True
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to parse job listing',
+            'error': result.get('error', 'Unknown error')
+        }), 500
+
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -227,18 +304,20 @@ def get_category():
     data = request.json
     category = data.get('category')
     
-    if not category or category not in ['buzzwords', 'red_flags', 'suspicious_email', 'urgency_phrases']:
+    if not category or category not in ['title', 'payment', 'requirements','buzzwords', 'red_flags', 'suspicious_email', 'urgency_phrases']:
         return jsonify({
             'success': False,
             'message': 'Invalid category'
         }), 400
     
     try:
+        print(category)
         response = supabase.table("fake_job").select("values").eq("name", category).execute()
         if response.data and len(response.data) > 0:
             return jsonify({
                 'success': True,
                 'data': response.data[0]["values"]
+                
             })
         else:
             return jsonify({
@@ -264,7 +343,7 @@ def update_category():
     category = data.get('category')
     items = data.get('items', [])
     
-    if not category or category not in ['buzzwords', 'red_flags', 'suspicious_email', 'urgency_phrases']:
+    if not category or category not in ['title', 'payment', 'requirements','buzzwords', 'red_flags', 'suspicious_email', 'urgency_phrases']:
         return jsonify({
             'success': False,
             'message': 'Invalid category'
@@ -326,7 +405,7 @@ def remove_items():
     category = data.get('category')
     items_to_remove = data.get('items', [])
     
-    if not category or category not in ['buzzwords', 'red_flags', 'suspicious_email', 'urgency_phrases']:
+    if not category or category not in ['title', 'payment', 'requirements','buzzwords', 'red_flags', 'suspicious_email', 'urgency_phrases']:
         return jsonify({
             'success': False,
             'message': 'Invalid category'

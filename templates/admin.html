@@ -56,8 +56,11 @@
                     <h2 class="text-xl font-semibold text-gray-700">Database Categories</h2>
                     
                     <div class="flex flex-wrap gap-2">
-                        <button class="category-btn bg-purple-100 px-4 py-2 rounded hover:bg-purple-200 active" data-category="buzzwords">Buzzwords</button>
+                        <button class="category-btn bg-purple-100 px-4 py-2 rounded hover:bg-purple-200" data-category="title">Title</button>
+                        <button class="category-btn bg-purple-100 px-4 py-2 rounded hover:bg-purple-200" data-category="payment">Payment</button>
+                        <button class="category-btn bg-purple-100 px-4 py-2 rounded hover:bg-purple-200" data-category="buzzwords">Buzzwords</button>
                         <button class="category-btn bg-purple-100 px-4 py-2 rounded hover:bg-purple-200" data-category="red_flags">Red Flags</button>
+                        <button class="category-btn bg-purple-100 px-4 py-2 rounded hover:bg-purple-200" data-category="requirements">Requirement</button>
                         <button class="category-btn bg-purple-100 px-4 py-2 rounded hover:bg-purple-200" data-category="suspicious_email">Suspicious Emails</button>
                         <button class="category-btn bg-purple-100 px-4 py-2 rounded hover:bg-purple-200" data-category="urgency_phrases">Urgency Phrases</button>
                     </div>
@@ -99,7 +102,7 @@
             // Check if user is already logged in (session check)
             checkLoginStatus();
             
-            let currentCategory = "buzzwords";
+            let currentCategory = "title";
             
             // Login functionality
             $('#loginBtn').click(function() {
@@ -156,7 +159,7 @@
                             $('#loginSection').hide();
                             $('#adminDashboard').show();
                             $('#adminUsername').text(response.username || 'Admin');
-                            loadCategoryData("buzzwords"); // Load initial category data
+                            loadCategoryData("title"); // Load initial category data
                         }
                     }
                 });
@@ -181,6 +184,7 @@
 
 
             $('.category-btn').click(function() {
+            
                 $('.category-btn').removeClass('active bg-purple-300').addClass('bg-purple-100');
                 $(this).removeClass('bg-purple-100').addClass('active bg-purple-300');
                 

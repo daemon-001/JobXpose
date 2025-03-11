@@ -13,8 +13,21 @@
             <!-- Header -->
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-4xl font-bold text-purple-700">AI Fake Job Detection</h1>
-                <a href="/admin" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Admin Dashboard</a>
+                <div class="flex gap-3">
+                    <!-- Import Button -->
+                    <button id="importBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Import <span style="font-size: 10px;">by AI</span></button>
+                    <a href="/admin" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Admin Dashboard</a>
+                </div>
             </div>
+
+            <!-- Import Text Box (Hidden by default) -->
+            <div id="importContainer" class="mb-6 bg-gray-100 p-4 rounded-lg hidden">
+                <div class="flex items-start gap-3">
+                    <textarea id="importText" class="flex-1 p-3 border rounded shadow-sm" rows="3" placeholder="Paste job listing data here..."></textarea>
+                    <button id="confirmImportBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Confirm</button>
+                </div>
+            </div>
+            
             <p class="text-gray-600 mb-6">Enter job listing details to analyze potential fraud indicators.</p>
             
             <!-- Job Input Form -->
@@ -67,6 +80,67 @@
 
     <script>
         $(document).ready(function() {
+            // Import button click handler
+            $('#importBtn').click(function() {
+                $('#importContainer').toggleClass('hidden');
+            });
+
+            // Confirm import button click handler
+            $('#confirmImportBtn').click(function() {
+                const importedText = $('#importText').val();
+
+                if (!importedText || importedText.trim().length < 50) {
+                    alert('Please enter a longer job description for accurate parsing.');
+                    return;
+                }
+
+                // Show loading indicator
+                $(this).html('<span class="animate-spin inline-block mr-2">⏳</span> Processing...');
+                $(this).prop('disabled', true);
+
+                // Call the backend API to process the text
+                $.ajax({
+                    url: '/import-job-text',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ text: importedText }),
+                    success: function(response) {
+                        if (response.success && response.data) {
+                            // Populate form fields with the parsed data
+                            $('#title').val(response.data.title || '');
+                            $('#company').val(response.data.company || '');
+                            $('#description').val(response.data.description || '');
+                            $('#salary').val(response.data.salary || '');
+                            $('#email').val(response.data.email || '');
+                            $('#requirements').val(response.data.requirements || '');
+
+                            // Show success message
+                            // alert('Job listing imported successfully!');
+                        } else {
+                            alert('Could not parse job listing. Please try manual entry.');
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Failed to process the job listing.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        alert(errorMessage);
+                    },
+                    complete: function() {
+                        // Reset button state
+                        $('#confirmImportBtn').html('Confirm');
+                        $('#confirmImportBtn').prop('disabled', false);
+
+                        // Hide the import container
+                        $('#importContainer').addClass('hidden');
+                        // Clear the import text area
+                        $('#importText').val('');
+                    }
+                });
+            });    
+            
+            // Analyze button click handler
             $('#analyzeBtn').click(function() {
                 $('#loading').removeClass('hidden');
                 
