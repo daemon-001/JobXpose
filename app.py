@@ -5,6 +5,9 @@ import os
 import secrets
 import autofill
 
+# Import the prediction service
+from prediction_service import JobPredictionService
+
 # Importing supabase
 from supabase import create_client
 
@@ -17,16 +20,17 @@ app = Flask(__name__)
 
 app.secret_key = secrets.token_hex(16)
 
+# Initialize the prediction service
+prediction_service = JobPredictionService()
+
 
 def validate_inputs(job_details):
     errors = []
-
-
     
-    if  job_details.get('title') and len(job_details['title']) < 3:
+    if job_details.get('title') and len(job_details['title']) < 3:
         errors.append("Job title must be at least 3 characters long")
     
-    if  job_details.get('company') and len(job_details['company']) < 2:
+    if job_details.get('company') and len(job_details['company']) < 2:
         errors.append("Company name must be at least 2 characters long")
     
     if job_details.get('email'):
@@ -40,13 +44,13 @@ def validate_inputs(job_details):
                 errors.append("Salary must be a positive number")
         except:
             errors.append("Invalid salary format")
-        return errors
+    
+    return errors
     
 
 
 def check_unrealistic_salary(salary):
     salary_value = float(salary)
-    print(salary_value)
     return salary_value > 70000 or salary_value < 5000
 
 
@@ -55,7 +59,7 @@ def check_generic_description(description):
 
 
 def check_minimal_requirements(requirements):
-    return len(requirements) < 50 or requirements.count(',') < 2
+    return len(requirements) < 50
 
 
 def check_suspicious_email(email):
@@ -75,10 +79,10 @@ def check_red_flags(description):
     red_flags = [item.lower() for item in request]
     return any(flag in description.lower() for flag in red_flags)
 
-def check_payments(discription):
+def check_payments(description):
     request = supabase.table("fake_job").select("values").eq("name", "payment").execute().data[0]["values"]
     payment = [item.lower() for item in request]
-    return any(pay in discription.lower() for pay in payment)
+    return any(pay in description.lower() for pay in payment)
 
 def check_urgency_pressure(description):
     request = supabase.table("fake_job").select("values").eq("name", "urgency_phrases").execute().data[0]["values"]
@@ -93,11 +97,7 @@ def check_job_title(title):
 def check_job_requirements(requirements):
     request = supabase.table("fake_job").select("values").eq("name", "requirements").execute().data[0]["values"]
     job_requirements = [item.lower() for item in request]
-    print(job_requirements)
     return any(requirement in requirements.lower() for requirement in job_requirements)
-
-
-
 
 
 def calculate_job_score(risks):
@@ -105,8 +105,8 @@ def calculate_job_score(risks):
     deductions = {
         'Suspicious job title': -25,
         'Suspicious job requirements': -20,
-        'Payment request found': -30,
-        'Unrealistic salary range': -30,
+        'Payment fraud indicators': -30,
+        'Unrealistic salary range': -40,
         'Overly generic or short job description': -20,
         'Suspicious contact email domain': -25,
         'Minimal or vague job requirements': -15,
@@ -118,55 +118,108 @@ def calculate_job_score(risks):
     total_deduction = sum(deductions.get(risk, -10) for risk in risks)
     return max(0, base_score + total_deduction)
 
+
+def combine_scores(rule_based_score, ml_score, num_risks):
+    """
+    Combine rule-based score and ML model score based on the number of detected risks
+    
+    Arguments:
+        rule_based_score (float): Score from the rule-based system (0-100)
+        ml_score (float): Score from the ML model (0-100)
+        num_risks (int): Number of detected risks
+    
+    Returns:
+        float: Combined score (0-100)
+    """
+    # Ensure scores are within valid range
+    rule_based_score = max(0, min(100, float(rule_based_score)))
+    ml_score = max(0, min(100, float(ml_score)))
+    
+    # Dynamic weight adjustment based on number of risks
+    if num_risks >= 3:
+        rule_weight = 0.6  # Higher weight on rule-based system for many risks
+        ml_weight = 0.4
+    elif num_risks >= 1:
+        rule_weight = 0.4  # Balanced weights for moderate risks
+        ml_weight = 0.6
+    else:
+        rule_weight = 0.3  # Higher weight on ML model for few/no risks
+        ml_weight = 0.7
+    
+    # Calculate weighted average
+    combined_score = (rule_based_score * rule_weight) + (ml_score * ml_weight)
+    
+    # Apply confidence adjustment based on risk count
+    confidence_factor = max(0.7, 1 - (num_risks * 0.1))  # Reduces score more with more risks
+    combined_score *= confidence_factor
+    
+    return round(max(0, min(100, combined_score)), 1)
+
+
 def analyze_job(job_details):
     risks = []
     risk_level = 'low'
 
-    if job_details.get('salary'):
+    # Rule-based checks
+    if job_details.get('title'):
         if check_job_title(job_details['title']):
             risks.append('Suspicious job title')
 
     if job_details.get('salary'):
         if check_unrealistic_salary(job_details['salary']):
-            risks.append('Unrealistic salary')
+            risks.append('Unrealistic salary range')
 
     if job_details.get('email'):
         if check_suspicious_email(job_details['email']):
             risks.append('Suspicious contact email domain')
     
-    if check_job_requirements(job_details['requirements']):
-        risks.append('Suspicious job requirements')
+    if job_details.get('requirements'):
+        if check_job_requirements(job_details['requirements']):
+            risks.append('Suspicious job requirements')
+        
+        if check_minimal_requirements(job_details['requirements']):
+            risks.append('Minimal or vague job requirements')
 
-    if check_payments(job_details['description']):
-        risks.append('Payment request found')
+    if job_details.get('description'):
+        if check_payments(job_details['description']):
+            risks.append('Payment fraud indicators')
+        
+        if check_generic_description(job_details['description']):
+            risks.append('Overly generic or short job description')
+        
+        if check_vague_benefits(job_details['description']):
+            risks.append('Contains suspicious buzzwords or promises')
+        
+        if check_urgency_pressure(job_details['description']):
+            risks.append('High-pressure or urgency tactics')
+        
+        if check_red_flags(job_details['description']):
+            risks.append('Suspicious company indicators')
     
-    if check_generic_description(job_details['description']):
-        risks.append('Overly generic or short job description')
+    # ML prediction
+    ml_prediction = prediction_service.predict(job_details)
+    ml_score = ml_prediction.get('legitimacy_score', 50)  # Default to 50 if prediction fails
     
-    if check_minimal_requirements(job_details['requirements']):
-        risks.append('Minimal or vague job requirements')
+    # Rule-based score
+    rule_based_score = calculate_job_score(risks)
     
-    if check_vague_benefits(job_details['description']):
-        risks.append('Contains suspicious buzzwords or promises')
+    # Combine scores
+    combined_score = combine_scores(rule_based_score, ml_score, len(risks))
     
-    if check_urgency_pressure(job_details['description']):
-        risks.append('High-pressure or urgency tactics')
-    
-    if check_red_flags(job_details['description']):
-        risks.append('Suspicious company indicators')
-    
-    # Calculate risk level based on number of risks
-    if len(risks) >= 3:
+    # Determine risk level based on combined score
+    if combined_score < 40:
         risk_level = 'high'
-    elif len(risks) >= 1:
+    elif combined_score < 70:
         risk_level = 'medium'
-    
-    legitimacy_score = calculate_job_score(risks)
+    else:
+        risk_level = 'low'
     
     return {
         'risks': risks,
         'risk_level': risk_level,
-        'legitimacy_score': legitimacy_score,
+        'legitimacy_score': combined_score,
+        'ml_score': ml_score,
+        'rule_based_score': rule_based_score,
         'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
@@ -247,7 +300,6 @@ def admin_login():
     try:
         # Query the admin credentials from Supabase
         response = supabase.table("admin_credentials").select("*").eq("username", username).execute()
-        print(response.data)
         
         if not response.data or len(response.data) == 0:
             return jsonify({
@@ -311,7 +363,6 @@ def get_category():
         }), 400
     
     try:
-        print(category)
         response = supabase.table("fake_job").select("values").eq("name", category).execute()
         if response.data and len(response.data) > 0:
             return jsonify({
@@ -372,13 +423,13 @@ def update_category():
         
         if not items_to_add:
             return jsonify({
-                'success': True,
-                'message': 'No new items to add',
+                'success': False,
+                'message': 'Already exists',
                 'added_count': 0
             })
         
         # Update the database
-        updated_items = existing_items + items_to_add
+        updated_items = items_to_add + existing_items
         supabase.table("fake_job").update({"values": updated_items}).eq("name", category).execute()
         
         return jsonify({
@@ -468,6 +519,26 @@ def check_session():
             'success': True,
             'isLoggedIn': False
         })
+    
+# Add this new route to app.py
+@app.route('/check-email', methods=['POST'])
+def check_email():
+    data = request.json
+    email = data.get('email')
+    
+    if not email or '@' not in email:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid email format'
+        }), 400
+    
+    # Use the existing check_suspicious_email function
+    is_suspicious = check_suspicious_email(email)
+    
+    return jsonify({
+        'success': True,
+        'suspicious': is_suspicious
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)

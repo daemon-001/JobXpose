@@ -15,7 +15,7 @@
                 <h1 class="text-4xl font-bold text-purple-700">AI Fake Job Detection</h1>
                 <div class="flex gap-3">
                     <!-- Import Button -->
-                    <button id="importBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Import <span style="font-size: 10px;">by AI</span></button>
+                    <button id="importBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Autofill <span style="font-size: 10px;">by AI</span></button>
                     <a href="/admin" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Admin Dashboard</a>
                 </div>
             </div>
@@ -28,7 +28,7 @@
                 </div>
             </div>
             
-            <p class="text-gray-600 mb-6">Enter job listing details to analyze potential fraud indicators.</p>
+            <p class="text-gray-600 mb-6">Enter job listing details to analyze potential fraud indicators using our hybrid system: rule-based checks + BiLSTM neural network.</p>
             
             <!-- Job Input Form -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -51,6 +51,7 @@
                 <div>
                     <label class="block font-medium">Contact Email</label>
                     <input type="email" id="email" class="w-full p-3 border rounded shadow-sm">
+                    <div id="emailFeedback" class="mt-1 text-sm hidden"></div>
                 </div>
                 <div class="col-span-1 lg:col-span-2">
                     <label class="block font-medium">Job Requirements</label>
@@ -66,14 +67,54 @@
             <!-- Analysis Results -->
             <div id="analysisResults" class="bg-gray-100 p-6 rounded-lg hidden mt-6">
                 <h2 class="text-xl font-bold flex items-center gap-2">
-                    Analysis Results <span id="riskIcon"></span>
+                    Hybrid Analysis Results <span id="riskIcon"></span>
                 </h2>
                 <p id="timestamp" class="text-gray-600"></p>
+                
+                <!-- Score Section -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <!-- Overall Score -->
+                    <div class="bg-white p-4 rounded shadow-sm">
+                        <h3 class="font-bold text-purple-700">Overall Score</h3>
+                        <div class="flex items-center mt-2">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="overallScoreBar" class="h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="overallScore" class="ml-2 font-bold">0%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- ML Model Score -->
+                    <div class="bg-white p-4 rounded shadow-sm">
+                        <h3 class="font-bold text-blue-700">ML Model Score</h3>
+                        <div class="flex items-center mt-2">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="mlScoreBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <span id="mlScore" class="ml-2 font-bold">0%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Risk Level -->
+                    <div class="bg-white p-4 rounded shadow-sm">
+                        <h3 class="font-bold text-gray-700">Risk Assessment</h3>
+                        <p id="riskLevel" class="mt-2 font-bold text-center text-lg"></p>
+                    </div>
+                </div>
+                
+                <!-- Risk Indicators -->
                 <div id="alertContainer" class="p-4 rounded mt-4">
-                    <h3 id="riskLevel" class="font-bold"></h3>
+                    <h3 class="font-bold mb-2">Detected Risk Factors:</h3>
                     <ul id="risksList" class="list-disc pl-4"></ul>
                 </div>
-                <p class="text-sm text-gray-500">Note: This is an automated analysis with realtime updated database.</p>
+                
+                <div class="border-t mt-4 pt-4">
+                    <p class="text-sm text-gray-600">
+                        <span class="font-semibold">How this works:</span> 
+                        This analysis combines rule-based detection with a BiLSTM deep learning model to provide a more accurate assessment.
+                        The overall score is a weighted combination of both approaches, with weights adjusted based on the number of detected risks.
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -84,20 +125,23 @@
             $('#importBtn').click(function() {
                 $('#importContainer').toggleClass('hidden');
             });
-
+        
             // Confirm import button click handler
             $('#confirmImportBtn').click(function() {
                 const importedText = $('#importText').val();
-
+            
                 if (!importedText || importedText.trim().length < 50) {
                     alert('Please enter a longer job description for accurate parsing.');
                     return;
                 }
-
+            
                 // Show loading indicator
                 $(this).html('<span class="animate-spin inline-block mr-2">⏳</span> Processing...');
                 $(this).prop('disabled', true);
-
+                
+                // Hide previous analysis results
+                $('#analysisResults').addClass('hidden');
+            
                 // Call the backend API to process the text
                 $.ajax({
                     url: '/import-job-text',
@@ -113,38 +157,90 @@
                             $('#salary').val(response.data.salary || '');
                             $('#email').val(response.data.email || '');
                             $('#requirements').val(response.data.requirements || '');
-
-                            // Show success message
-                            // alert('Job listing imported successfully!');
+                            
+                            // Check the email if it exists
+                            if (response.data.email) {
+                                checkEmailDomain(response.data.email);
+                            }
+                            
+                            // Clear the import text box
+                            $('#importText').val('');
+                            
+                            // Close the import container
+                            $('#importContainer').addClass('hidden');
                         } else {
-                            alert('Could not parse job listing. Please try manual entry.');
+                            alert('Failed to parse job listing: ' + (response.message || 'Unknown error'));
                         }
                     },
-                    error: function(xhr) {
-                        let errorMessage = 'Failed to process the job listing.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        alert(errorMessage);
+                    error: function(xhr, status, error) {
+                        alert('Error processing job listing: ' + error);
                     },
                     complete: function() {
-                        // Reset button state
+                        // Reset the button
                         $('#confirmImportBtn').html('Confirm');
                         $('#confirmImportBtn').prop('disabled', false);
-
-                        // Hide the import container
-                        $('#importContainer').addClass('hidden');
-                        // Clear the import text area
-                        $('#importText').val('');
                     }
                 });
-            });    
-            
+            });
+        
+            // Add change event handlers to all form inputs to hide previous results
+            $('#title, #company, #description, #salary, #requirements').on('input', function() {
+                $('#analysisResults').addClass('hidden');
+            });
+
+            // Email input event handler for real-time validation
+            $('#email').on('input', function() {
+                const email = $(this).val().trim();
+                if (email) {
+                    checkEmailDomain(email);
+                } else {
+                    // Hide feedback if email field is empty
+                    $('#emailFeedback').addClass('hidden');
+                }
+            });
+
+            // Function to check email domain
+            function checkEmailDomain(email) {
+                // Clear previous feedback first
+                $('#emailFeedback').addClass('hidden');
+
+                // Basic email format validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!email || !emailRegex.test(email)) {
+                    return;
+                }
+
+                $.ajax({
+                    url: '/check-email',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ email: email }),
+                    success: function(response) {
+                        if (response.success) {
+                            $('#emailFeedback').removeClass('hidden');
+                            
+                            if (response.suspicious) {
+                                $('#emailFeedback')
+                                    .removeClass('text-green-600')
+                                    .addClass('text-red-600')
+                                    .html('⚠️ Warning: This email domain appears suspicious');
+                            } else {
+                                $('#emailFeedback')
+                                    .removeClass('text-red-600')
+                                    .addClass('text-green-600')
+                                    .html('✅ Email domain looks legitimate');
+                            }
+                        }
+                    },
+                    error: function() {
+                        $('#emailFeedback').addClass('hidden');
+                    }
+                });
+            }
+        
             // Analyze button click handler
             $('#analyzeBtn').click(function() {
-                $('#loading').removeClass('hidden');
-                
-                const jobDetails = {
+                const jobData = {
                     title: $('#title').val(),
                     company: $('#company').val(),
                     description: $('#description').val(),
@@ -152,61 +248,110 @@
                     email: $('#email').val(),
                     requirements: $('#requirements').val()
                 };
-
+            
+                // Basic client-side validation
+                if (!jobData.title || !jobData.company || !jobData.description) {
+                    alert('Please fill in at least the job title, company name, and description.');
+                    return;
+                }
+            
+                // Show loading indicator
+                $('#loading').removeClass('hidden');
+                $(this).prop('disabled', true);
+            
+                // Send the job data to the backend for analysis
                 $.ajax({
                     url: '/analyze',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify(jobDetails),
+                    data: JSON.stringify(jobData),
                     success: function(response) {
-                        $('#loading').addClass('hidden');
-                        
-                        // Access the nested data object from the response
-                        const analysis = response.data;
-                        
-                        $('#timestamp').text('Analysis completed at ' + analysis.timestamp);
-                        $('#riskLevel').text('Risk Level: ' + analysis.risk_level.toUpperCase());
-                        
-                        const riskColors = {
-                            'high': 'text-red-600 bg-red-100',
-                            'medium': 'text-yellow-600 bg-yellow-100',
-                            'low': 'text-green-600 bg-green-100'
-                        };
-                        $('#alertContainer').attr('class', `p-4 rounded mt-4 ${riskColors[analysis.risk_level]}`);
-                        
-                        const riskIcons = {
-                            'high': '⚠️⚠️',
-                            'medium': '⚠️',
-                            'low': '✅'
-                        };
-                        $('#riskIcon').html(`<span>${riskIcons[analysis.risk_level]}</span>`);
-                        
-                        $('#risksList').empty();
-                        if (analysis.risks.length > 0) {
-                            analysis.risks.forEach(risk => {
-                                $('#risksList').append(`<li>${risk}</li>`);
-                            });
+                        if (response.success) {
+                            displayResults(response.data);
                         } else {
-                            $('#risksList').append('<li>No risk indicators detected. This job listing appears legitimate.</li>');
+                            const errorMsg = response.errors ? response.errors.join('\n') : 'Analysis failed';
+                            alert(errorMsg);
                         }
-                        
-                        $('#analysisResults').removeClass('hidden');
-                        
-                        // Scroll to the analysis results with smooth animation
-                        $('html, body').animate({
-                            scrollTop: $('#analysisResults').offset().top
-                        }, 800);
                     },
-                    error: function(xhr) {
+                    error: function(xhr, status, error) {
+                        alert('Error during analysis: ' + error);
+                    },
+                    complete: function() {
+                        // Hide loading indicator
                         $('#loading').addClass('hidden');
-                        if (xhr.responseJSON && xhr.responseJSON.errors) {
-                            alert('Validation errors: ' + xhr.responseJSON.errors.join('\n'));
-                        } else {
-                            alert('Unable to connect to the server. Please try again later.');
-                        }
+                        $('#analyzeBtn').prop('disabled', false);
                     }
                 });
             });
+        
+            // Function to display analysis results
+            function displayResults(data) {
+                // Show the results container
+                $('#analysisResults').removeClass('hidden');
+                
+                // Update the timestamp
+                $('#timestamp').text('Analyzed on: ' + data.timestamp);
+                
+                // Update scores
+                const overallScore = data.legitimacy_score;
+                const mlScore = data.ml_score;
+                
+                $('#overallScore').text(overallScore + '%');
+                $('#mlScore').text(mlScore + '%');
+                
+                // Update progress bars
+                $('#overallScoreBar').css('width', overallScore + '%');
+                $('#mlScoreBar').css('width', mlScore + '%');
+                
+                // Clear previous risk level classes
+                $('#alertContainer').removeClass('bg-red-100 bg-yellow-100 bg-green-100');
+                $('#riskLevel').removeClass('text-red-600 text-yellow-600 text-green-600');
+                $('#overallScoreBar').removeClass('bg-red-600 bg-yellow-500 bg-green-500');
+                
+                // Set risk level and color
+                const riskLevel = data.risk_level;
+                let riskColor, riskText, riskIcon;
+                
+                if (riskLevel === 'high') {
+                    riskColor = 'text-red-600';
+                    riskText = 'High Risk';
+                    riskIcon = '⚠️';
+                    $('#alertContainer').addClass('bg-red-100');
+                    $('#overallScoreBar').addClass('bg-red-600');
+                } else if (riskLevel === 'medium') {
+                    riskColor = 'text-yellow-600';
+                    riskText = 'Medium Risk';
+                    riskIcon = '⚠️';
+                    $('#alertContainer').addClass('bg-yellow-100');
+                    $('#overallScoreBar').addClass('bg-yellow-500');
+                } else {
+                    riskColor = 'text-green-600';
+                    riskText = 'Low Risk';
+                    riskIcon = '✅';
+                    $('#alertContainer').addClass('bg-green-100');
+                    $('#overallScoreBar').addClass('bg-green-500');
+                }
+                
+                $('#riskLevel').text(riskText).addClass(riskColor);
+                $('#riskIcon').text(riskIcon);
+                
+                // Display risk indicators
+                const risksList = $('#risksList');
+                risksList.empty();
+                
+                if (data.risks && data.risks.length > 0) {
+                    data.risks.forEach(function(risk) {
+                        risksList.append('<li>' + risk + '</li>');
+                    });
+                } else {
+                    risksList.append('<li>No specific risk factors detected</li>');
+                }
+                
+                // Scroll to results
+                $('html, body').animate({
+                    scrollTop: $('#analysisResults').offset().top - 20
+                }, 500);
+            }
         });
     </script>
 </body>
