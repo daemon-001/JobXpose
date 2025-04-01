@@ -55,7 +55,7 @@ def check_unrealistic_salary(salary):
 
 
 def check_generic_description(description):
-    return len(description) < 100 or description.count('.') < 2
+    return len(description) < 100
 
 
 def check_minimal_requirements(requirements):

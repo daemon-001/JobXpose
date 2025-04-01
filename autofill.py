@@ -9,7 +9,7 @@ import re
 load_dotenv()
 
 # Get API key from environment variables
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 def parse_job_listing(text):
     headers = {
