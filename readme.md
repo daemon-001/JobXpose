@@ -17,8 +17,8 @@ An AI-powered web application to detect potentially fraudulent job listings usin
 - **Backend:** Flask, Supabase (Database)
 - **Frontend:** HTML, Tailwind CSS, jQuery
 - **Machine Learning:** TensorFlow/Keras (Bi-LSTM model)
-- **APIs:** Supabase API for real-time updates
-- **Deployment:** Works on any Flask-compatible hosting
+- **Supabase API:** Supabase API for real-time updates
+- **OpenRouter API:** OpenRouter API for text classification
 
 ## 🤖 Hybrid Detection Architecture
 
@@ -95,11 +95,15 @@ The system employs a sophisticated algorithm to combine rule-based and machine l
 
 ```
 📝 AI-Fake-Job-Detector
-│️— 📄 README.md            # Project documentation
-│️— 📄 app.py               # Flask backend handling job analysis
-│️— 📄 update_supabase.py   # Script to update risk indicators in Supabase
-│️— 📂 templates/index.html # Frontend UI for job submission and results
-│️— 📂 templates/admin.html # Admin interface for database management
+│️— 📄 README.md              # Project documentation
+│️— 📄 app.py                 # Flask backend handling job analysis
+│️— 📄 autofill.py            # Process and classify raw text with OpenRouter
+│️— 📄 prediction_service.py  # Model prediction function
+│️— 📄 update_supabase.py     # Manual Script to update risk indicators in Supabase
+│️— 📂 model                  # Contains bi-lstm model files
+│️— 📂 templates/index.html   # Frontend UI for job submission and results
+│️— 📂 templates/admin.html   # Admin interface for database management
+
 ```
 
 ## 🏃‍♂️ How to Run Locally
