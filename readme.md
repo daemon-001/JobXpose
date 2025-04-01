@@ -102,8 +102,7 @@ The system employs a sophisticated algorithm to combine rule-based and machine l
 ├──📄 prediction_service.py  # Model prediction function
 ├──📄 update_supabase.py     # Manual Script to update risk indicators in Supabase
 ├──📂 model/                 # Contains Bi-lstm model files
-├──📂 templates/index.html   # Frontend UI for job submission and results
-└──📂 templates/admin.html   # Admin interface for database management
+└──📂 templates/             # Frontend UI for job analysis and admin pannel
 ```
 
 ## 🏃‍♂️ How to Run Locally
