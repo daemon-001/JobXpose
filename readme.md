@@ -88,7 +88,7 @@ The system employs a sophisticated algorithm to combine rule-based and machine l
 - **Direct Database Management:** Administrators can update fake job patterns and fraudulent email domains directly in the Supabase database
 - **Pattern Library:** Maintain and expand a comprehensive library of deceptive tactics and suspicious indicators
 - **Email Blacklisting:** Add and manage suspicious email domains associated with fraudulent job postings
-- **Real-time Updates:** Changes to the database are immediately reflected in the detection system without requiring code changes
+- **Real-time Updates:** Changes to the database are immediately reflected in the detection system without requiring code changes and model tranning
 - **Performance Metrics:** Track detection improvements with each database update (30% increase in accuracy for new job listings)
 
 ## 📂 Project Structure
