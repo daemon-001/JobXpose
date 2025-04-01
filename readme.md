@@ -110,7 +110,7 @@ The system employs a sophisticated algorithm to combine rule-based and machine l
 
 1. **Clone the repository**
    ```sh
-   git clone https://github.com/yourusername/AI-Fake-Job-Detector.git
+   git clone https://github.com/daemon-001/AI-Fake-Job-Detection-WebApp
    cd AI-Fake-Job-Detector
    ```
 
