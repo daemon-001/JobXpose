@@ -94,24 +94,24 @@ The system employs a sophisticated algorithm to combine rule-based and machine l
 ## 📂 Project Structure
 
 ```
-📝 AI-Fake-Job-Detector
-│️— 📄 README.md              # Project documentation
-│️— 📄 app.py                 # Flask backend handling job analysis
-│️— 📄 autofill.py            # Process and classify raw text with OpenRouter
-│️— 📄 prediction_service.py  # Model prediction function
-│️— 📄 update_supabase.py     # Manual Script to update risk indicators in Supabase
-│️— 📂 model                  # Contains bi-lstm model files
-│️— 📂 templates/index.html   # Frontend UI for job submission and results
-│️— 📂 templates/admin.html   # Admin interface for database management
-
+📝 JobXpose
+│
+├──📄 README.md              # Project documentation
+├──📄 app.py                 # Flask backend handling job analysis
+├──📄 autofill.py            # Process and classify raw text with OpenRouter
+├──📄 prediction_service.py  # Model prediction function
+├──📄 update_supabase.py     # Manual Script to update risk indicators in Supabase
+├──📂 model/                 # Contains Bi-lstm model files
+├──📂 templates/index.html   # Frontend UI for job submission and results
+└──📂 templates/admin.html   # Admin interface for database management
 ```
 
 ## 🏃‍♂️ How to Run Locally
 
 1. **Clone the repository**
    ```sh
-   git clone https://github.com/daemon-001/AI-Fake-Job-Detection-WebApp
-   cd AI-Fake-Job-Detector
+   git clone https://github.com/daemon-001/JobXpose
+   cd JobXpose
    ```
 
 2. **Install dependencies**
