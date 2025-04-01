@@ -16,6 +16,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__)
 
+
 app.secret_key = secrets.token_hex(16)
 prediction_service = JobPredictionService()
 
