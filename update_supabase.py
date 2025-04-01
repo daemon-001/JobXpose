@@ -1,9 +1,10 @@
 # Importing supabase
 from supabase import create_client
+import os
 
 # Enter your Supabase URL and Key here
-SUPABASE_URL = "Enter SUPABASE_URL"
-SUPABASE_KEY = "Enter SUPABASE_KEY"
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def update_data(column_name, new_data_list):

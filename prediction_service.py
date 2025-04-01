@@ -6,7 +6,7 @@ from tensorflow import keras
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 class JobPredictionService:
-    def __init__(self, model_dir='models'):
+    def __init__(self, model_dir='model'):
         self.model_dir = model_dir
         self.model = None
         self.tokenizer = None

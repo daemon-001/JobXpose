@@ -1,3 +1,4 @@
+from supabase import create_client
 from flask import Flask, render_template, request, jsonify, session
 from datetime import datetime
 import validators
@@ -5,24 +6,18 @@ import os
 import secrets
 import autofill
 
-# Import the prediction service
 from prediction_service import JobPredictionService
 
-# Importing supabase
-from supabase import create_client
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-SUPABASE_URL = "https://uvjuxbsqjebecfxrvnso.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2anV4YnNxamViZWNmeHJ2bnNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwODI3NDcsImV4cCI6MjA1NTY1ODc0N30.Vfc5xclfQdhvYGW8nKVCJnVOdzXO5_DFBNd--YqdJkI"
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 app = Flask(__name__)
 
 app.secret_key = secrets.token_hex(16)
-
-# Initialize the prediction service
 prediction_service = JobPredictionService()
-
 
 def validate_inputs(job_details):
     errors = []
@@ -53,26 +48,21 @@ def check_unrealistic_salary(salary):
     salary_value = float(salary)
     return salary_value > 70000 or salary_value < 5000
 
-
 def check_generic_description(description):
     return len(description) < 100
 
-
 def check_minimal_requirements(requirements):
     return len(requirements) < 50
-
 
 def check_suspicious_email(email):
     request = supabase.table("fake_job").select("values").eq("name", "suspicious_email").execute().data[0]["values"]
     suspicious_email = [item.lower() for item in request]
     return any(domain in email.lower() for domain in suspicious_email) or not email.endswith(('.com', '.org', '.net', '.edu', '.gov', '.in'))
 
-
 def check_vague_benefits(description):
     request = supabase.table("fake_job").select("values").eq("name", "buzzwords").execute().data[0]["values"]
     buzzwords = [item.lower() for item in request]
     return any(word in description.lower() for word in buzzwords)
-
 
 def check_red_flags(description):
     request = supabase.table("fake_job").select("values").eq("name", "red_flags").execute().data[0]["values"]
@@ -99,7 +89,6 @@ def check_job_requirements(requirements):
     job_requirements = [item.lower() for item in request]
     return any(requirement in requirements.lower() for requirement in job_requirements)
 
-
 def calculate_job_score(risks):
     base_score = 100
     deductions = {
@@ -114,36 +103,24 @@ def calculate_job_score(risks):
         'High-pressure or urgency tactics': -10,
         'Suspicious company indicators': -25
     }
-    
     total_deduction = sum(deductions.get(risk, -10) for risk in risks)
     return max(0, base_score + total_deduction)
 
-
 def combine_scores(rule_based_score, ml_score, num_risks):
-    """
-    Combine rule-based score and ML model score based on the number of detected risks
-    
-    Arguments:
-        rule_based_score (float): Score from the rule-based system (0-100)
-        ml_score (float): Score from the ML model (0-100)
-        num_risks (int): Number of detected risks
-    
-    Returns:
-        float: Combined score (0-100)
-    """
+
     # Ensure scores are within valid range
     rule_based_score = max(0, min(100, float(rule_based_score)))
     ml_score = max(0, min(100, float(ml_score)))
     
     # Dynamic weight adjustment based on number of risks
     if num_risks >= 3:
-        rule_weight = 0.6  # Higher weight on rule-based system for many risks
+        rule_weight = 0.6  # Higher weight on rule-based system for 3+ risks
         ml_weight = 0.4
     elif num_risks >= 1:
-        rule_weight = 0.4  # Balanced weights for moderate risks
+        rule_weight = 0.4  # Balanced weights for 1+ risks
         ml_weight = 0.6
     else:
-        rule_weight = 0.3  # Higher weight on ML model for few/no risks
+        rule_weight = 0.3  # Higher weight on ML model for 0 risks
         ml_weight = 0.7
     
     # Calculate weighted average
