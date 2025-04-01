@@ -1,4 +1,4 @@
-# AI Fake Job Detector
+# JobXpose
 
 An AI-powered web application to detect potentially fraudulent job listings using a hybrid approach that combines advanced deep learning with rule-based analysis. This project leverages a Bidirectional LSTM neural network model alongside a comprehensive rule-based system that analyzes job descriptions, salaries, emails, and other factors to assess legitimacy and flag suspicious postings. The system continuously evolves through its dynamic database synced with supabase, allowing it to adapt to new fraudulent patterns over time.
 
