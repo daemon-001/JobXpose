@@ -34,7 +34,7 @@ The project utilizes a powerful hybrid approach combining machine learning and r
   - Real-time prediction capabilities
 
 ### Rule-Based Component
-- **Pattern Recognition with Supabase Database:**
+- **Pattern Recognition with Supabase Database**
 - **Risk Scoring System:** Each job posting starts with 100 points and gets deductions based on detected issues with:
   1. **Suspicious Job Title (-25 points)**
   2. **Suspicious Job Requirements (-20 points)**
